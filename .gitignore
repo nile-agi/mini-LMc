@@ -1,0 +1,14 @@
+build/
+build-*/
+*.o
+*.obj
+*.a
+*.exe
+minilmc
+gguf_test_*.gguf
+platform_test.tmp
+models/*.gguf
+.vscode/
+.cache/
+compile_commands.json
+.DS_Store
