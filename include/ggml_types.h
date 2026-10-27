@@ -5,13 +5,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/*
- * GGML tensor storage type identifiers, as written into GGUF tensor
- * descriptors. These are wire-format values — never renumber one or
- * reuse a removed slot, since old files reference these numbers
- * permanently. Gaps (4, 5, 31-33, 36-38) are historical removals and
- * must stay reserved forever.
- */
+// GGML tensor storage type identifiers, as written into GGUF tensor
+// descriptors. These are wire-format values — never renumber one or
+// reuse a removed slot, since old files reference these numbers
+// permanently. Gaps (4, 5, 31-33, 36-38) are historical removals and
+// must stay reserved forever.
 enum ggml_type {
   GGML_TYPE_F32 = 0,
   GGML_TYPE_F16 = 1,
@@ -53,25 +51,25 @@ enum ggml_type {
 
 typedef struct {
   const char *name;
-  uint32_t block_size; /* elements represented by one storage block */
-  uint32_t type_size;  /* bytes occupied by one storage block       */
+  uint32_t block_size; // elements represented by one storage block
+  uint32_t type_size;  // bytes occupied by one storage block
 } ggml_type_traits_t;
 
-/* Layout lookup for an active type. Returns false for a removed,
- * unknown, or non-storage type — the caller must check the result
- * before trusting *out. */
+// Layout lookup for an active type. Returns false for a removed,
+// unknown, or non-storage type — the caller must check the result
+// before trusting *out.
 bool ggml_get_type_traits(enum ggml_type type, ggml_type_traits_t *out);
 
-/* Canonical name for an active type ("Q4_K"), or NULL if invalid. */
+// Canonical name for an active type ("Q4_K"), or NULL if invalid.
 const char *ggml_type_name(enum ggml_type type);
 
-/* Computes total on-disk storage for a tensor shape, with full
- * overflow checking. Quantized types require dims[0] to be a whole
- * number of blocks — a partial block is a malformed file, not
- * something to round up silently. Returns false on any invalid
- * input (bad type, >4 dims, non-block-aligned shape, or a size
- * that would overflow size_t). */
+// Computes total on-disk storage for a tensor shape, with full
+// overflow checking. Quantized types require dims[0] to be a whole
+// number of blocks — a partial block is a malformed file, not
+// something to round up silently. Returns false on any invalid
+// input (bad type, >4 dims, non-block-aligned shape, or a size
+// that would overflow size_t).
 bool ggml_tensor_storage_size(enum ggml_type type, uint32_t n_dims,
                               const uint64_t *dimensions, size_t *out_size);
 
-#endif /* GGML_TYPES_H */
+#endif // GGML_TYPES_H

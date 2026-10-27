@@ -139,4 +139,4 @@ void mlmc_unmap_file(mlmc_mapped_file_t *f) {
   memset(f, 0, sizeof(*f));
 }
 
-#endif /* _WIN32 */
+#endif // _WIN32

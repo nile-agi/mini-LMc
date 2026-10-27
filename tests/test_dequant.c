@@ -108,8 +108,8 @@ static void test_q8_0_gemv_matches_reference(void) {
   // Reference: fully dequantize each row, then dot in double precision.
   for (int r = 0; r < ROWS; r++) {
     float row[COLS];
-    CHECK(mlmc_dequantize_row(GGML_TYPE_Q8_0,
-                              matrix + r * BLOCKS_PER_ROW * 34, COLS, row));
+    CHECK(mlmc_dequantize_row(GGML_TYPE_Q8_0, matrix + r * BLOCKS_PER_ROW * 34,
+                              COLS, row));
     double expected = 0.0;
     for (int c = 0; c < COLS; c++) {
       expected += (double)row[c] * (double)x[c];

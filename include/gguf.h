@@ -86,4 +86,4 @@ const void *gguf_tensor_data(const gguf_file_t *f, const gguf_tensor_info_t *t,
                              size_t *out_size);
 void gguf_print_summary(const gguf_file_t *f, int max_tensors_shown);
 
-#endif /* GGUF_H */
+#endif // GGUF_H

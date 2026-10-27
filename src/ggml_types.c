@@ -2,14 +2,12 @@
 
 #include <limits.h>
 
-/*
- * Block layouts, one row per active type: (name, elements/block, bytes/block).
- * Every number here is derived from the block struct's own field
- * sizes, not quoted from memory — before trusting a bits-per-weight
- * figure anywhere, compute it yourself: bpw = type_size * 8 / block_size.
- * Slots not listed here (the removed/reserved gaps) are zero-initialized
- * by the C standard and rejected by ggml_get_type_traits().
- */
+// Block layouts, one row per active type: (name, elements/block, bytes/block).
+// Every number here is derived from the block struct's own field
+// sizes, not quoted from memory — before trusting a bits-per-weight
+// figure anywhere, compute it yourself: bpw = type_size * 8 / block_size.
+// Slots not listed here (the removed/reserved gaps) are zero-initialized
+// by the C standard and rejected by ggml_get_type_traits().
 static const ggml_type_traits_t type_traits[GGML_TYPE_COUNT] = {
     [GGML_TYPE_F32] = {"F32", 1, 4},
     [GGML_TYPE_F16] = {"F16", 1, 2},
@@ -76,13 +74,13 @@ bool ggml_tensor_storage_size(enum ggml_type type, uint32_t n_dims,
 
   uint64_t row_elements = (n_dims != 0) ? dimensions[0] : 1;
   if (row_elements % traits.block_size != 0) {
-    return false; /* a partial block means the file is malformed */
+    return false; // a partial block means the file is malformed
   }
 
   size_t block_count = (size_t)(row_elements / traits.block_size);
   for (uint32_t i = 1; i < n_dims; ++i) {
     if (dimensions[i] != 0 && block_count > SIZE_MAX / dimensions[i]) {
-      return false; /* would overflow size_t */
+      return false; // would overflow size_t
     }
     block_count *= (size_t)dimensions[i];
   }

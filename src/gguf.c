@@ -6,13 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* ======================================================================
- * Bounds-safe primitive readers.
- *
- * Every read checks "do I have enough bytes left?" BEFORE touching
- * memory, never after. All values are read assuming little-endian
- * on-disk layout, which is what GGUF v3 uses by default.
- * ==================================================================== */
+// Bounds-safe primitive readers.
+//
+// Every read checks "do I have enough bytes left?" BEFORE touching
+// memory, never after. All values are read assuming little-endian
+// on-disk layout, which is what GGUF v3 uses by default.
 
 static int read_u8_safe(const uint8_t **cursor, size_t *remaining,
                         uint8_t *out) {
@@ -58,9 +56,9 @@ static int read_u64_safe(const uint8_t **cursor, size_t *remaining,
   return 0;
 }
 
-/* GGUF strings: u64 length prefix, then raw UTF-8, never NUL-terminated
- * on disk. We always allocate len+1 and add our own NUL so the rest of
- * the codebase can treat these as ordinary C strings. */
+// GGUF strings: u64 length prefix, then raw UTF-8, never NUL-terminated
+// on disk. We always allocate len+1 and add our own NUL so the rest of
+// the codebase can treat these as ordinary C strings.
 static char *read_gguf_string_safe(const uint8_t **cursor, size_t *remaining) {
   uint64_t len;
   if (read_u64_safe(cursor, remaining, &len) != 0) {
@@ -96,9 +94,7 @@ static size_t align_up_safe(size_t offset, size_t alignment) {
   return offset + pad;
 }
 
-/* ======================================================================
- * Recursive metadata value parsing and freeing.
- * ==================================================================== */
+// Recursive metadata value parsing and freeing.
 
 static void free_value(gguf_value_t *v);
 
@@ -199,7 +195,7 @@ static int parse_value(const uint8_t **cursor, size_t *remaining,
       return -1;
     }
     if (elem_type_raw > GGUF_TYPE_FLOAT64) {
-      return -1; /* unknown element type tag */
+      return -1; // unknown element type tag
     }
     if (read_u64_safe(cursor, remaining, &len) != 0) {
       return -1;
@@ -254,11 +250,9 @@ static void free_value(gguf_value_t *v) {
   memset(v, 0, sizeof(*v));
 }
 
-/* ======================================================================
- * gguf_load(): header -> metadata -> tensor descriptors -> alignment
- * -> validated tensor byte ranges. Any failure at any stage frees
- * everything allocated so far and returns -1.
- * ==================================================================== */
+// gguf_load(): header -> metadata -> tensor descriptors -> alignment
+// -> validated tensor byte ranges. Any failure at any stage frees
+// everything allocated so far and returns -1.
 
 int gguf_load(const char *path, gguf_file_t *out) {
   memset(out, 0, sizeof(*out));
@@ -271,7 +265,7 @@ int gguf_load(const char *path, gguf_file_t *out) {
   const uint8_t *cursor = (const uint8_t *)out->file.data;
   size_t remaining = out->file.size;
 
-  /* --- header (24 bytes) --- */
+  // Header (24 bytes).
   uint32_t magic, version;
   uint64_t tensor_count, kv_count;
   if (read_u32_safe(&cursor, &remaining, &magic) != 0 ||
@@ -282,7 +276,7 @@ int gguf_load(const char *path, gguf_file_t *out) {
     gguf_free(out);
     return -1;
   }
-  if (magic != 0x46554747u) { /* "GGUF" little-endian */
+  if (magic != 0x46554747u) { // "GGUF" little-endian
     fprintf(stderr, "gguf_load: bad magic 0x%08" PRIX32 "\n", magic);
     gguf_free(out);
     return -1;
@@ -298,7 +292,7 @@ int gguf_load(const char *path, gguf_file_t *out) {
   out->tensor_count = tensor_count;
   out->metadata_kv_count = kv_count;
 
-  /* --- metadata --- */
+  // Metadata.
   if (kv_count > 0) {
     if (kv_count > SIZE_MAX / sizeof(gguf_kv_t)) {
       fprintf(stderr, "gguf_load: metadata_kv_count too large\n");
@@ -337,7 +331,7 @@ int gguf_load(const char *path, gguf_file_t *out) {
     }
   }
 
-  /* --- tensor descriptors --- */
+  // Tensor descriptors.
   if (tensor_count > 0) {
     if (tensor_count > SIZE_MAX / sizeof(gguf_tensor_info_t)) {
       fprintf(stderr, "gguf_load: tensor_count too large\n");
@@ -423,12 +417,9 @@ int gguf_load(const char *path, gguf_file_t *out) {
     out->alignment = align->v.v_u32;
   }
 
-  /* --- data section offset ---
-   * A file with zero tensors has no data section at all, so there is
-   * nothing to pad or align to — the file may legitimately end right
-   * after the last metadata value. Only require alignment and
-   * apply the "must fit in the file" check when a data section
-   * actually exists (tensor_count > 0). */
+  // A file with zero tensors has no data section, so there is nothing to
+  // align and the file may end after its last metadata value. Validate the
+  // aligned data offset only when tensor data exists.
   size_t header_end = (size_t)(cursor - (const uint8_t *)out->file.data);
   if (tensor_count > 0) {
     size_t data_start = align_up_safe(header_end, out->alignment);
@@ -442,7 +433,7 @@ int gguf_load(const char *path, gguf_file_t *out) {
     out->tensor_data_offset = header_end;
   }
 
-  /* --- per-tensor range validation --- */
+  // Validate each tensor's byte range.
   for (uint64_t i = 0; i < tensor_count; i++) {
     const gguf_tensor_info_t *t = &out->tensors[i];
 
@@ -477,9 +468,7 @@ int gguf_load(const char *path, gguf_file_t *out) {
   return 0;
 }
 
-/* ======================================================================
- * Cleanup, lookup, and the tensor-data accessor.
- * ==================================================================== */
+// Cleanup, lookup, and the tensor-data accessor.
 
 void gguf_free(gguf_file_t *f) {
   if (!f) {
@@ -552,9 +541,7 @@ const void *gguf_tensor_data(const gguf_file_t *f, const gguf_tensor_info_t *t,
   return (const uint8_t *)f->file.data + abs_offset;
 }
 
-/* ======================================================================
- * Summary printer.
- * ==================================================================== */
+// Summary printer.
 
 void gguf_print_summary(const gguf_file_t *f, int max_tensors_shown) {
   printf("GGUF v%" PRIu32 " -- %" PRIu64 " tensors, %" PRIu64

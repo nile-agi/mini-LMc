@@ -15,8 +15,13 @@ add_library(minilmc_core STATIC
   src/ggml_types.c
   src/gguf.c
   src/dequant.c
+  src/model.c
+  src/tokenizer.c
 )
 target_include_directories(minilmc_core PUBLIC include)
+if(NOT MSVC)
+  target_link_libraries(minilmc_core PUBLIC m)
+endif()
 
 add_executable(minilmc src/main.c)
 target_link_libraries(minilmc PRIVATE minilmc_core)
@@ -38,3 +43,11 @@ add_test(NAME gguf_loader COMMAND test_gguf_loader)
 add_executable(test_dequant tests/test_dequant.c)
 target_link_libraries(test_dequant PRIVATE minilmc_core)
 add_test(NAME dequant COMMAND test_dequant)
+
+add_executable(test_forward tests/test_forward.c)
+target_link_libraries(test_forward PRIVATE minilmc_core)
+add_test(NAME forward COMMAND test_forward)
+
+add_executable(test_tokenizer tests/test_tokenizer.c)
+target_link_libraries(test_tokenizer PRIVATE minilmc_core)
+add_test(NAME tokenizer COMMAND test_tokenizer)
