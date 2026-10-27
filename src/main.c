@@ -35,13 +35,7 @@ static int cmd_info(int argc, char **argv) {
     return 1;
   }
 
-  const gguf_tensor_info_t *t = NULL;
-  for (uint64_t i = 0; i < f.tensor_count; i++) {
-    if (strcmp(f.tensors[i].name, argv[3]) == 0) {
-      t = &f.tensors[i];
-      break;
-    }
-  }
+  const gguf_tensor_info_t *t = gguf_find_tensor(&f, argv[3]);
   if (!t) {
     fprintf(stderr, "No tensor named '%s'\n", argv[3]);
     gguf_free(&f);
