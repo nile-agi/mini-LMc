@@ -38,10 +38,10 @@ turns in the model context until the context limit is reached. The chat command
 uses the Qwen message markers and a default helpful-assistant system prompt.
 
 ## Status
-Blocks 0 and 1 are complete: GGUF tensor lookup, alignment validation, and
+GGUF tensor lookup, alignment validation, and
 scalar F32/F16/BF16/Q8_0 dequantization with fused GEMV.
 
-Block 2 supports one-token-at-a-time Qwen2 forward passes with embedding,
+Qwen2 forward passes with embedding,
 RMSNorm, half-split RoPE, GQA attention, KV caching, SwiGLU, Q/K/V biases, and
 logits. Block 3 adds GGUF byte-level BPE tokenization, UTF-8 token decoding,
 greedy and temperature/top-k sampling, and the `generate` command. The
