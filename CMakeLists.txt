@@ -14,6 +14,7 @@ add_library(minilmc_core STATIC
   src/platform.c
   src/ggml_types.c
   src/gguf.c
+  src/dequant.c
 )
 target_include_directories(minilmc_core PUBLIC include)
 
