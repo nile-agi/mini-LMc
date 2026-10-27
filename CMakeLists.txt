@@ -34,3 +34,7 @@ add_test(NAME ggml_types COMMAND test_ggml_types)
 add_executable(test_gguf_loader tests/test_gguf_loader.c)
 target_link_libraries(test_gguf_loader PRIVATE minilmc_core)
 add_test(NAME gguf_loader COMMAND test_gguf_loader)
+
+add_executable(test_dequant tests/test_dequant.c)
+target_link_libraries(test_dequant PRIVATE minilmc_core)
+add_test(NAME dequant COMMAND test_dequant)
