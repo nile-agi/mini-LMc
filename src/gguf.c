@@ -410,12 +410,12 @@ int gguf_load(const char *path, gguf_file_t *out) {
     }
   }
 
-  /* --- alignment: default 32, must be a nonzero power of 2 --- */
+  // Alignment defaults to 32 and must be a nonzero multiple of 8.
   out->alignment = 32;
   const gguf_value_t *align = gguf_find(out, "general.alignment");
   if (align) {
     if (align->type != GGUF_TYPE_UINT32 || align->v.v_u32 == 0 ||
-        (align->v.v_u32 & (align->v.v_u32 - 1)) != 0) {
+        (align->v.v_u32 % 8) != 0) {
       fprintf(stderr, "gguf_load: general.alignment invalid\n");
       gguf_free(out);
       return -1;
