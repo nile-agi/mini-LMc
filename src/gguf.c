@@ -514,6 +514,19 @@ const gguf_value_t *gguf_find(const gguf_file_t *f, const char *key) {
   return NULL;
 }
 
+const gguf_tensor_info_t *gguf_find_tensor(const gguf_file_t *f,
+                                           const char *name) {
+  if (!f || !f->tensors || !name) {
+    return NULL;
+  }
+  for (uint64_t i = 0; i < f->tensor_count; i++) {
+    if (strcmp(f->tensors[i].name, name) == 0) {
+      return &f->tensors[i];
+    }
+  }
+  return NULL;
+}
+
 const void *gguf_tensor_data(const gguf_file_t *f, const gguf_tensor_info_t *t,
                              size_t *out_size) {
   if (!f || !t || !f->file.data) {
