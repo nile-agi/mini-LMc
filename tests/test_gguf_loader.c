@@ -279,6 +279,23 @@ static void test_invalid_alignment(void) {
   remove(path);
 }
 
+static void test_alignment_24(void) {
+  TEST("general.alignment = 24 (multiple of 8, not a power of 2) is accepted");
+  uint8_t buf[256];
+  size_t pos = 0;
+  put_header(buf, &pos, 3, 0, 1);
+  put_str(buf, &pos, "general.alignment");
+  put_u32(buf, &pos, GGUF_TYPE_UINT32);
+  put_u32(buf, &pos, 24);
+
+  const char *path = write_tmp(buf, pos);
+  gguf_file_t f;
+  CHECK(gguf_load(path, &f) == 0, "gguf_load succeeded");
+  CHECK(f.alignment == 24, "alignment == 24");
+  gguf_free(&f);
+  remove(path);
+}
+
 int main(void) {
   printf("=== gguf_load() test suite ===\n");
 
@@ -293,6 +310,7 @@ int main(void) {
   test_bad_quant_alignment();
   test_custom_alignment();
   test_invalid_alignment();
+  test_alignment_24();
 
   printf("\n=== Summary: %d passed, %d failed (of %d checks) ===\n", passed,
          failed, passed + failed);
