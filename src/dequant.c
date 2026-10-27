@@ -14,6 +14,12 @@ static uint16_t read_u16(const uint8_t *p) {
   return value;
 }
 
+static float read_f32(const uint8_t *p) {
+  float value;
+  memcpy(&value, p, sizeof(value));
+  return value;
+}
+
 static float bits_to_float(uint32_t bits) {
   float value;
   memcpy(&value, &bits, sizeof(value));
@@ -114,4 +120,87 @@ bool mlmc_dequantize_row(enum ggml_type type, const void *src,
   default:
     return false;
   }
+}
+
+typedef float (*dot_row_fn)(const uint8_t *row, uint64_t n, const float *x);
+
+static float dot_f32(const uint8_t *row, uint64_t n, const float *x) {
+  float sum = 0.0f;
+  for (uint64_t i = 0; i < n; i++) {
+    sum += read_f32(row + i * 4) * x[i];
+  }
+  return sum;
+}
+
+static float dot_f16(const uint8_t *row, uint64_t n, const float *x) {
+  float sum = 0.0f;
+  for (uint64_t i = 0; i < n; i++) {
+    sum += mlmc_fp16_to_fp32(read_u16(row + i * 2)) * x[i];
+  }
+  return sum;
+}
+
+static float dot_bf16(const uint8_t *row, uint64_t n, const float *x) {
+  float sum = 0.0f;
+  for (uint64_t i = 0; i < n; i++) {
+    sum += mlmc_bf16_to_fp32(read_u16(row + i * 2)) * x[i];
+  }
+  return sum;
+}
+
+static float dot_q8_0(const uint8_t *row, uint64_t n, const float *x) {
+  float sum = 0.0f;
+  uint64_t block_count = n / Q8_0_BLOCK_ELEMS;
+
+  for (uint64_t b = 0; b < block_count; b++) {
+    const uint8_t *block = row + b * Q8_0_BLOCK_BYTES;
+    float scale = mlmc_fp16_to_fp32(read_u16(block));
+    const int8_t *quants = (const int8_t *)(block + Q8_0_SCALE_BYTES);
+    const float *xb = x + b * Q8_0_BLOCK_ELEMS;
+    float block_sum = 0.0f;
+
+    for (uint32_t i = 0; i < Q8_0_BLOCK_ELEMS; i++) {
+      block_sum += (float)quants[i] * xb[i];
+    }
+    sum += scale * block_sum;
+  }
+  return sum;
+}
+
+static dot_row_fn find_dot_kernel(enum ggml_type type) {
+  switch (type) {
+  case GGML_TYPE_F32:
+    return dot_f32;
+  case GGML_TYPE_F16:
+    return dot_f16;
+  case GGML_TYPE_BF16:
+    return dot_bf16;
+  case GGML_TYPE_Q8_0:
+    return dot_q8_0;
+  default:
+    return NULL;
+  }
+}
+
+bool mlmc_gemv(enum ggml_type type, const void *weights, uint64_t n_rows,
+               uint64_t n_cols, const float *x, float *y) {
+  dot_row_fn dot = find_dot_kernel(type);
+  if (!dot || !weights || !x || !y) {
+    return false;
+  }
+
+  size_t row_bytes = 0;
+  size_t matrix_bytes = 0;
+  uint64_t row_dims[1] = {n_cols};
+  uint64_t matrix_dims[2] = {n_cols, n_rows};
+  if (!ggml_tensor_storage_size(type, 1, row_dims, &row_bytes) ||
+      !ggml_tensor_storage_size(type, 2, matrix_dims, &matrix_bytes)) {
+    return false;
+  }
+
+  const uint8_t *bytes = (const uint8_t *)weights;
+  for (uint64_t r = 0; r < n_rows; r++) {
+    y[r] = dot(bytes + (size_t)r * row_bytes, n_cols, x);
+  }
+  return true;
 }

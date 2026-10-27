@@ -21,4 +21,11 @@ bool mlmc_type_is_supported(enum ggml_type type);
 bool mlmc_dequantize_row(enum ggml_type type, const void *src,
                          uint64_t n_elements, float *dst);
 
+// Fused matrix-vector product: y[r] = dot(row r of W, x).
+// W is n_rows rows of n_cols stored values. Rows are decoded block by
+// block while multiplying, so the full matrix is never turned into floats.
+// Returns false for an unsupported type or a shape that is not block-aligned.
+bool mlmc_gemv(enum ggml_type type, const void *weights, uint64_t n_rows,
+               uint64_t n_cols, const float *x, float *y);
+
 #endif // MINILMC_DEQUANT_H
